@@ -200,12 +200,23 @@ function digAndMove(dir, steps, attempts)
   return stepsTaken
 end
 
+-- SINGLE ATTACK IN UP,DOWN,FORWARD DIRECTION
+function attackDir(tDir)
+  if tDir==up then
+    return turtle.attackUp()
+  end
+  if tDir==down then
+    return turtle.attackDown()
+  end
+  return turtle.attack()
+end
+
 -- ATTACKS IN A CERTAIN DIRECTION
 function attack(dir)
   turnTo(dir)
   local tDir=turnedDir(dir)
   local success
-  while turtle.attack(tDir) do
+  while attackDir(tDir) do
     success=true
     sleep(0.3)
   end
