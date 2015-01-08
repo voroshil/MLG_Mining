@@ -1,8 +1,12 @@
-version=1.0.2
+version=1.0.3
 
 =============
 == CHANGES == 
 =============
+[1.0.3]
+- Prevent turtle from digging really huge vein (since vein digging is done without refueling or restocking). Added
+  new argument -numDepth (maximum path depth in vein digging routine)
+
 [1.0.2]
 - Fixed Bug causing script to crash when a Mob or Player was in front of the turtle (caused by changes on the turtle API)
 

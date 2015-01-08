@@ -114,7 +114,11 @@ function excavate(configuration)
   local steps = {}
   repeat
     steps[numSteps] = steps[numSteps] or 0
-    steps[numSteps] = lookForOres(configuration, steps[numSteps])  
+    if numSteps <= configuration.numDepth then
+      steps[numSteps] = lookForOres(configuration, steps[numSteps])  
+    else
+      steps[numSteps]=7
+    end
     if steps[numSteps] ~= 7 then
       if ((numSteps==0) or (steps[numSteps]~=api_turtleExt.reverseIntDir(steps[numSteps-1]))) then
         if api_turtleExt.digAndMove(api_turtleExt.turnedDir(api_turtleExt.intToDir(steps[numSteps]))) == 1 then

@@ -48,3 +48,5 @@ itemDropDir=down
 torchSuckDir=right
 -- THE DIRECTION OF THE IGNORE BLOCKS
 ignoreDir=left
+-- THE MAXIMUM PATH DEPTH WHEN MINING VEIN
+numDepth=1000

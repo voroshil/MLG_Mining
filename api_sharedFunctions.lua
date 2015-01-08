@@ -69,7 +69,8 @@ end
 local function isNumberInput(param)
   if ((param=="numL") or (param=="numT") or (param=="numS") or (param=="skipL") or (param=="skipT") or (param=="skipS") 
       or (param=="height") or (param=="blocksBetweenShafts") or (param=="firstShaftOffset") or (param=="evenLevelOffset") 
-      or (param=="centerRadius") or (param=="numIgnoreBlocks") or (param=="departureFuel") or (param=="returnFuel")) then 
+      or (param=="centerRadius") or (param=="numIgnoreBlocks") or (param=="departureFuel") or (param=="returnFuel")
+      or (param=="numDepth")) then 
     return true
   else
     return false
@@ -146,7 +147,7 @@ local function printManual()
   print(" -torchS <dir>   (=torch suck dir)")
   print(" -itemD <dir>    (=item drop dir)")
   print(" -ignoreS <dir>  (=ignore block dir)")
-  print("")
+  print(" -numDepth <num> (=max path depth in vein)")
   print("")
 end
 
@@ -222,6 +223,8 @@ local function getDefaultConfig()
   configuration.torchSuckDir=right
   -- THE DIRECTION OF THE IGNORE BLOCKS
   configuration.ignoreDir=left
+  -- THE MAXIMUM PATH DEPTH WHEN MINING VEIN
+  configuration.numDepth=1000
   -- RETURN THE CONFIGURATION
   return configuration
 end
@@ -447,6 +450,13 @@ local function processCommandLine(configuration, args)
         return false
       end
       configuration.ignoreDir=args[readParams+2]
+      readParams=readParams+2
+    elseif string.lower(args[readParams+1])=="-numdepth" then
+      if not (readParams+1 < #args) then
+        printManual()
+        return false
+      end 
+      configuration.numDepth=tonumber(args[readParams+2])
       readParams=readParams+2
     else
       printManual()
