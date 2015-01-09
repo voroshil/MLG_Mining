@@ -17,37 +17,45 @@ os.loadAPI("api_turtleExt")
 -- EXCAVATES A SHAFT, DIGGING OUT ALL THE SPECIAL BLOCKS (ORES ETC)
 function excavateShaft(configuration, dir)
   local squaresMoved=0
-  for i=1,configuration.centerRadius+api_sharedFunctions.calculateMoves(configuration, configuration.currentL, 0, configuration.currentS) do
-    if api_sharedFunctions.needsRestocking(configuration) then
+  local restocker = function()
       api_turtleExt.turnTo(back)
       exitShaftAndRestock(configuration, dir, squaresMoved)
+  end
+  for i=1,configuration.centerRadius+api_sharedFunctions.calculateMoves(configuration, configuration.currentL, 0, configuration.currentS) do
+    if api_sharedFunctions.needsRestocking(configuration) then
+      restocker()
     end
     if api_turtleExt.digAndMove(forward)==0 then
       api_sharedFunctions.reportObstruction(configuration, dir)
       break
     end
     squaresMoved = squaresMoved + 1
-    checkSides(configuration, up) 
+    checkSides(configuration, up, restocker)
   end
   api_turtleExt.digAndMove(down, 1, 0)
   api_turtleExt.turnTo(back)
-  checkSides(configuration, down)
+
+  restocker = function()
+      api_turtleExt.digAndMove(up, 1, 0)
+      exitShaftAndRestock(configuration, dir, squaresMoved)
+      api_turtleExt.turnTo(back)
+      api_turtleExt.digAndMove(down, 1, 0)
+  end
+
+  checkSides(configuration, down, restocker)
   for i=1,squaresMoved do
     if configuration.placeTorches and (squaresMoved%6==5) then
       api_turtleExt.place(back, 1)
     end
     if api_sharedFunctions.needsRestocking(configuration) then
-      api_turtleExt.digAndMove(up, 1, 0)
-      exitShaftAndRestock(configuration, dir, squaresMoved)
-      api_turtleExt.turnTo(back)
-      api_turtleExt.digAndMove(down, 1, 0)
+      restocker()
     end
     if api_turtleExt.digAndMove(forward)==0 then
       api_sharedFunctions.reportObstruction(configuration, dir)
       break
     end
     squaresMoved = squaresMoved - 1
-    checkSides(configuration, down) 
+    checkSides(configuration, down, restocker)
   end
   api_turtleExt.digAndMove(up, 1, 0)
   api_turtleExt.digAndMove(forward, squaresMoved, 0)
@@ -55,10 +63,10 @@ end
 
 -- CHECKS IF THE BLOCKS AT THE LEFT OR RIGHT ARE SPECIAL (AND THE TOP OR BOTTOM, DEPENDING ON THE INPUT) 
 -- IF SO IT WILL DIG OUT THAT BLOCK AND EXCAVATE THE REST OF THE VEIN
-function checkSides(configuration, vDir)
-  check(configuration, vDir)
-  check(configuration, left)
-  check(configuration, right)
+function checkSides(configuration, vDir, restocker)
+  check(configuration, vDir, restocker)
+  check(configuration, left, restocker)
+  check(configuration, right,restocker)
 end
 
 -- DROPS THE ITEMS IN THE INVENTORY AND REFUELS THE TURTLE
@@ -70,16 +78,36 @@ function exitShaftAndRestock(configuration, dir, squaresMoved)
   api_turtleExt.digAndMove(forward, squaresMoved, 0)
 end
 
+-- EXIT UNFINISHED VEIN AND RESTOCK
+function exitVeinAndRestock(configuration, steps, numSteps, restocker)
+  for i=1,numSteps do
+        api_turtleExt.digAndMove(api_turtleExt.reverseDir(api_turtleExt.turnedDir(api_turtleExt.intToDir(steps[numSteps-i]))), 1, 0)
+        api_turtleExt.turnFrom(api_turtleExt.intToDir(steps[numSteps-i]))
+  end
+  restocker()
+  for i=1,numSteps do
+        api_turtleExt.turnTo(api_turtleExt.intToDir(steps[i-1]))
+        api_turtleExt.digAndMove(api_turtleExt.turnedDir(api_turtleExt.intToDir(steps[i-1])),1,0)
+  end
+end
+
 -- CHECKS IF A BLOCK IN A CERTAIN DIRECTION IS SPECIAL
 -- IF SO IT WILL DIG OUT THAT BLOCK AND EXCAVATE THE REST OF THE VEIN
-function check(configuration, dir)
+function check(configuration, dir, shaftRestocker)
   api_turtleExt.turnTo(dir)
   local tDir=api_turtleExt.turnedDir(dir)
   if api_turtleExt.detect(tDir) then
     if isSpecial(configuration, tDir) then
       if api_turtleExt.digAndMove(tDir) == 1 then
         configuration.numOres=configuration.numOres+1
-        excavate(configuration)
+        local restocker = function()
+          api_turtleExt.digAndMove(api_turtleExt.reverseDir(tDir), 1, 0)
+          api_turtleExt.turnFrom(dir)
+          shaftRestocker()
+          api_turtleExt.turnTo(dir)
+          api_turtleExt.digAndMove(tDir, 1, 0)
+        end
+        excavate(configuration, restocker)
         api_turtleExt.digAndMove(api_turtleExt.reverseDir(tDir), 1, 0)
       end
     end
@@ -109,11 +137,14 @@ function isSpecial(configuration, dir)
 end
 
 -- EXCAVATES AN ORE VEIN
-function excavate(configuration)
+function excavate(configuration, restocker)
   local numSteps = 0
   local steps = {}
   repeat
     steps[numSteps] = steps[numSteps] or 0
+    if api_sharedFunctions.needsRestocking(configuration) then
+      exitVeinAndRestock(configuration, steps, numSteps, restocker)
+    end
     if numSteps <= configuration.numDepth then
       steps[numSteps] = lookForOres(configuration, steps[numSteps])  
     else
