@@ -34,7 +34,7 @@ function excavateShaft(configuration, dir)
   checkSides(configuration, down)
   for i=1,squaresMoved do
     if configuration.placeTorches and (squaresMoved%6==5) then
-      api_turtleExt.place(up, 1)
+      api_turtleExt.place(back, 1)
     end
     if api_sharedFunctions.needsRestocking(configuration) then
       api_turtleExt.digAndMove(up, 1, 0)
